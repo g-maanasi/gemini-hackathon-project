@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
+import Image from 'next/image'
+import logo from "./claritas-logo.png"
 
 const Header = () => {
     const router = useRouter();
@@ -17,15 +19,18 @@ const Header = () => {
                     onClick={() => onNavigate("/")}
                 >
                     <div className="relative">
-                        <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-40 animate-pulse"></div>
-                        <div className="relative w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center border border-white/20">
-                            <span className="text-white font-black text-xl">C</span>
-                        </div>
+                        <Image
+                            src={logo}
+                            width={90}
+                            height={90}
+                            alt="Logo for Claritas"
+                            className="flex mr-[-1rem]"
+                        />
                     </div>
 
                     <span className="text-2xl font-black tracking-tighter text-white">
                         Claritas{" "}
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-400">
                             Learning
                         </span>
                     </span>
