@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
     UserRole,
@@ -14,10 +13,10 @@ import {
     LEARNING_STYLES,
     STUDENT_TRAITS
 } from '../constants';
-import { getLearningRecommendations } from '../services/apiService';
 
 interface Props {
-    onComplete: (data: RecommendationResponse) => void;
+    // Note: data type updated to 'any' to accommodate the CoursePlan response from FastAPI
+    onComplete: (data: any) => void; 
     onProcessingChange: (status: boolean) => void;
 }
 
@@ -55,15 +54,49 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
         }));
     };
 
+    /**
+     * UPDATED: Modified to call FastAPI /generate_course using FormData
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         onProcessingChange(true);
+
         try {
-            const result = await getLearningRecommendations(profile);
+            // 1. Initialize FormData to match FastAPI @app.post("/generate_course")
+            const formData = new FormData();
+            
+            // Map PreferenceProfile to the Form fields your Python backend expects
+            formData.append('topic', profile.customGoals || `Course for ${profile.grade}`);
+            formData.append('skill_level', profile.educationLevel);
+            formData.append('age_group', profile.grade);
+            
+            // Contextual data for the AI prompt
+            const contextNotes = `Style: ${profile.learningStyle}. Traits: ${profile.traits.join(', ')}. State: ${profile.state}`;
+            formData.append('additional_notes', contextNotes);
+            
+            // Weaknesses provide the 'materials' or focus areas
+            formData.append('materials_text', `Weaknesses to address: ${profile.weaknesses.join(', ')}`);
+
+            // 2. Make the API Call to your FastAPI server (Port 5000)
+            const response = await fetch('http://127.0.0.1:8000/generate_course', {
+                method: 'POST',
+                // Fetch automatically handles multipart/form-data boundary when passing FormData
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            // 3. Send the generated CoursePlan back up to the Page
             onComplete(result);
+
         } catch (error) {
-            alert("Verification failed. Please retry.");
+            console.error("Course Generation Error:", error);
+            alert("The AI engine failed to synthesize your roadmap. Please check if your FastAPI server is running on port 5000.");
         } finally {
             setLoading(false);
             onProcessingChange(false);
@@ -91,6 +124,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
 
             <form onSubmit={handleSubmit} className="p-10 md:p-14 min-h-[550px] flex flex-col justify-between">
                 <div className="flex-1">
+                    {/* Step 1: Role & Region */}
                     {step === 1 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
                             <div className="space-y-2">
@@ -148,6 +182,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                         </div>
                     )}
 
+                    {/* Step 2: Education Level & Grade */}
                     {step === 2 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
                             <div className="space-y-2">
@@ -197,6 +232,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                         </div>
                     )}
 
+                    {/* Step 3: Learning Style & Traits */}
                     {step === 3 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
                             <div className="space-y-2">
@@ -245,6 +281,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                         </div>
                     )}
 
+                    {/* Step 4: Weaknesses & Goals */}
                     {step === 4 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
                             <div className="space-y-2">
