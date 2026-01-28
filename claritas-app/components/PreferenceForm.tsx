@@ -35,8 +35,8 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
     const [loading, setLoading] = useState(false);
     const [customSubject, setCustomSubject] = useState('');
 
-    const totalSteps = 4;
-    const nextStep = () => setStep(prev => Math.min(prev + 1, totalSteps));
+    const totalSteps = 5;
+    const nextStep = () => setStep(prev => Math.min(prev + 1, totalSteps + 1));
     const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
     const toggleTrait = (trait: string) => {
@@ -59,72 +59,34 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
         onProcessingChange(true);
 
         try {
-            // Simulate AI Synthesis with Gemini 2.5
-            await new Promise(resolve => setTimeout(resolve, 2500));
+            const formData = new FormData();
             
-            // Constructing a Mock CoursePlan matching your interface
-            const mockCoursePlan = {
-                courseTitle: profile.customGoals || `Foundations in ${profile.weaknesses[0] || 'Modern Science'}`,
-                description: `A personalized learning pathway for ${profile.grade} learners, specifically aligned with ${profile.state} state standards and optimized for ${profile.learningStyle} cognitive processing.`,
-                metadata: {
-                    skillLevel: profile.educationLevel,
-                    ageGroup: profile.grade,
-                    estimatedTotalDuration: "14 Hours"
-                },
-                units: [
-                    {
-                        unitNumber: 1,
-                        title: `Introduction to ${profile.weaknesses[0] || 'Core Concepts'}`,
-                        description: `Building a base-level understanding of essential principles while incorporating ${profile.learningStyle} learning triggers.`,
-                        duration: "2h 30m",
-                        subtopics: [
-                            "Historical Context & Origins",
-                            "Defining Key Terminologies",
-                            "Interactive Concept Mapping",
-                            "Real-world Application Examples"
-                        ],
-                        quiz: {
-                            title: "Baseline Mastery Check",
-                            questionCount: 10
-                        }
-                    },
-                    {
-                        unitNumber: 2,
-                        title: "Analytical Deep Dive",
-                        description: "Breaking down complex structures into digestible components based on your character attributes.",
-                        duration: "4h 15m",
-                        subtopics: [
-                            "Structural Analysis",
-                            "Comparative Studies",
-                            "Pattern Recognition",
-                            "Critical Evaluation Models"
-                        ],
-                        quiz: {
-                            title: "Mid-Term Synthesis",
-                            questionCount: 15
-                        }
-                    },
-                    {
-                        unitNumber: 3,
-                        title: "Practical Mastery",
-                        description: `Synthesizing knowledge into active skills, focusing on overcoming your primary weakness in ${profile.weaknesses.join(', ')}.`,
-                        duration: "7h 15m",
-                        subtopics: [
-                            "Hands-on Project Lab",
-                            "Advanced Problem Solving",
-                            "Scenario Synthesis",
-                            "Final Portfolio Construction"
-                        ],
-                        quiz: {
-                            title: "Final Certification Quiz",
-                            questionCount: 25
-                        }
-                    }
-                ]
-            };
+            // Map PreferenceProfile to the Form fields your Python backend expects
+            formData.append('topic', profile.customGoals || `Course for ${profile.grade}`);
+            formData.append('skill_level', profile.educationLevel);
+            formData.append('age_group', profile.grade);
+            
+            // Contextual data for the AI prompt
+            const contextNotes = `Style: ${profile.learningStyle}. Traits: ${profile.traits.join(', ')}. State: ${profile.state}`;
+            formData.append('additional_notes', contextNotes);
+            
+            // Weaknesses provide the 'materials' or focus areas
+            formData.append('materials_text', `Weaknesses to address: ${profile.weaknesses.join(', ')}`);
 
-            onComplete(mockCoursePlan);
+            // 2. Make the API Call to your FastAPI server (Port 5000)
+            const response = await fetch('http://127.0.0.1:5000/generate_course', {
+                method: 'POST',
+                // Fetch automatically handles multipart/form-data boundary when passing FormData
+                body: formData,
+            });
 
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            onComplete(result);
         } catch (error) {
             console.error("Course Generation Error:", error);
             alert("The AI engine failed to synthesize your roadmap.");

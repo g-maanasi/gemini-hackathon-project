@@ -8,6 +8,12 @@ export enum EducationLevel {
     COLLEGE = 'College/University',
 }
 
+export interface UserInformation {
+    name: string;
+    email: string;
+    password: string;
+}
+
 export interface PreferenceProfile {
     role: UserRole;
     state: string;

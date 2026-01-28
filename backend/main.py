@@ -6,11 +6,12 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from google import genai
 from dotenv import load_dotenv
 from course_generator import CourseGenerator
+from database import supabase
 
 load_dotenv()
 
@@ -223,6 +224,63 @@ async def generate_topic(request: TopicRequest):
     except Exception as e:
         print(f"Error in generate_topic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# USER-RELATED FUNCTIONS #
+class User(BaseModel):
+    name: str
+    email: str
+    password: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Alice",
+                "email": "alice@example.com",
+                "password": "securePassword123"
+            }
+        }
+
+@app.post("/create_user")
+def create_user(user: User):
+    try:
+        # 1️⃣ Check if email already exists in Supabase Auth
+        try:
+            existing_user = supabase.auth.api.get_user_by_email(user.email)
+        except Exception as e:
+            existing_user = None  # If Supabase API throws for not found, ignore
+
+        if existing_user is not None:
+            raise HTTPException(status_code=400, detail="Email is already registered")
+
+        # 2️⃣ Create user in Supabase Auth
+        auth_response = supabase.auth.sign_up({
+            "email": user.email,
+            "password": user.password
+        })
+
+        if auth_response.user is None:
+            raise HTTPException(status_code=400, detail="Auth signup failed")
+
+        user_id = auth_response.user.id
+
+        # 3️⃣ Insert profile info into users table
+        db_response = supabase.table("users").insert({
+            "id": user_id,
+            "name": user.name,
+            "email": user.email
+        }).execute()
+
+        if db_response.error:
+            raise HTTPException(status_code=500, detail=db_response.error.message)
+
+        # 4️⃣ Return success
+        return {"message": "User created successfully", "data": db_response.data}
+
+    except HTTPException:
+        raise  # Re-raise known HTTP exceptions
+    except Exception as e:
+        # Catch-all for unexpected errors
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=5000)

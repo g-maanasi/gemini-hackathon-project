@@ -42,7 +42,7 @@ const PreferencesPage: React.FC<PreferencesContainerProps> = ({ onBackToHome }) 
 
     // View 2: The Configuration Form (Pathfinder View)
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden">
+        <div className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden height-100">
             {/* Background Decorative Elements */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-100/40 rounded-full blur-[120px] animate-pulse"></div>
@@ -110,7 +110,7 @@ const PreferencesPage: React.FC<PreferencesContainerProps> = ({ onBackToHome }) 
                             <div className="mt-16 flex flex-col items-center gap-4">
                                 <div className="flex items-center gap-3 bg-white px-8 py-4 rounded-2xl border border-indigo-100 shadow-xl shadow-indigo-100/50">
                                   <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-pulse"></div>
-                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live: Gemini 2.5 Flash Native Audio</span>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live: Gemini 3.0 Flash Native Audio</span>
                                 </div>
                                 <div className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest animate-pulse">
                                     Step 4/4: Standards Alignment

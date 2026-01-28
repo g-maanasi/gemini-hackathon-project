@@ -12,22 +12,27 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { createUser } from '@/services/apiService';
+import { UserInformation } from '@/types';
 
 type AuthMode = 'login' | 'signup';
+interface Props {
+  onComplete: (data: any) => void; 
+}
 
-export default function SignInPage() {
+const SignInPage: React.FC<Props> = ({ onComplete }) => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserInformation>({
     name: '',
     email: '',
-    password: '',
-    confirmPassword: ''
+    password: ''
   });
 
+  const [passwordCheck, setPasswordCheck] = useState<string>('');
   const toggleMode = () => {
     setMode(prev => prev === 'login' ? 'signup' : 'login');
     setError(null);
@@ -39,12 +44,17 @@ export default function SignInPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePasswordCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordCheck(value);
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    if (mode === 'signup' && formData.password !== formData.confirmPassword) {
+    if (mode === 'signup' && formData.password !== passwordCheck) {
       setError("Passwords don't match");
       setIsLoading(false);
       return;
@@ -57,7 +67,7 @@ export default function SignInPage() {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      onComplete(createUser(formData));
       setSuccess(true);
       console.log('Authentication successful:', { mode, email: formData.email });
     } catch (err) {
@@ -95,7 +105,7 @@ export default function SignInPage() {
             </div>
           )}
 
-          {success && (
+          {success && !error && (
             <div className="mb-6 p-4 bg-emerald-50/50 backdrop-blur-sm border border-emerald-100 rounded-2xl flex items-center gap-3 text-emerald-600 animate-fade-in">
               <CheckCircle2 size={20} />
               <span className="text-sm font-medium">Authentication successful!</span>
@@ -147,14 +157,14 @@ export default function SignInPage() {
                 )}
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-600 transition-colors" size={18} />
                 <input
                   type="password"
                   name="password"
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
+                  placeholder="Please enter password."
                   className="w-full pl-12 pr-4 py-4 bg-white/40 border border-slate-200/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all backdrop-blur-sm"
                 />
               </div>
@@ -169,9 +179,9 @@ export default function SignInPage() {
                     type="password"
                     name="confirmPassword"
                     required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
+                    value={passwordCheck}
+                    onChange={handlePasswordCheck}
+                    placeholder="Please enter password."
                     className="w-full pl-12 pr-4 py-4 bg-white/40 border border-slate-200/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all backdrop-blur-sm"
                   />
                 </div>
@@ -236,3 +246,5 @@ export default function SignInPage() {
     </div>
   );
 };
+
+export default SignInPage;

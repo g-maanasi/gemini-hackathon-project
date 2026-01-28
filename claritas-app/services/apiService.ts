@@ -1,5 +1,5 @@
 // services/apiService.ts
-import { PreferenceProfile } from "../types";
+import { PreferenceProfile, UserInformation } from "../types";
 
 const API_BASE_URL = "http://127.0.0.5000";
 
@@ -24,3 +24,20 @@ export const generateCourse = async (profile: PreferenceProfile): Promise<any> =
 
     return response.json();
 };
+
+export const createUser = async (user: UserInformation): Promise<any> => {
+    console.log(user)
+    const response = await fetch('http://127.0.0.1:5000/create_user', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json', // <-- important
+        },
+        body: JSON.stringify(user),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+    }
+
+    return response.json();
+}
