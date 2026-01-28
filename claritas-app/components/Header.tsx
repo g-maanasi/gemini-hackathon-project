@@ -1,44 +1,41 @@
-"use client";
-import { useRouter } from "next/navigation";
-import Image from 'next/image'
-import logo from "../app/claritas-logo.png"
+import React from 'react';
+import { Sparkles } from 'lucide-react';
 
-const Header = () => {
-    const router = useRouter();
+interface HeaderProps {
+  onLogoClick?: () => void;
+}
 
-    const onNavigate = (path: string) => {
-        router.push(path);
-    };
+const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
+  return (
+    <nav className="fixed top-0 w-full z-50 border-b border-white/20 bg-white/30 backdrop-blur-xl shadow-sm">
+      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-20">
+        <div
+          className="flex items-center gap-3 cursor-pointer group"
+          onClick={onLogoClick}
+        >
+          <div className="relative w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+            <Sparkles className="text-white" size={24} />
+          </div>
 
-    return (
-        <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-slate-950/40 backdrop-blur-xl">
-            <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-20">
-                <div
-                    className="flex items-center gap-3 cursor-pointer"
-                    onClick={() => onNavigate("/")}
-                >
-                    <div className="relative">
-                        <Image
-                            src={logo}
-                            width={90}
-                            height={90}
-                            alt="Logo for Claritas"
-                            className="flex mr-[-1rem]"
-                        />
-                    </div>
+          <span className="text-2xl font-black tracking-tighter text-slate-800">
+            Claritas{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-indigo-600">
+              Learning
+            </span>
+          </span>
+        </div>
 
-                    <span className="text-2xl font-black tracking-tighter text-white">
-                        Claritas{" "}
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-400">
-                            Learning
-                        </span>
-                    </span>
-                </div>
-
-
-            </div>
-        </nav>
-    );
+        <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+          <a href="#" className="hover:text-indigo-600 transition-colors">Courses</a>
+          <a href="#" className="hover:text-indigo-600 transition-colors">Pricing</a>
+          <a href="#" className="hover:text-indigo-600 transition-colors">Resources</a>
+          <button className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-all active:scale-95">
+            Get Started
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
 };
 
 export default Header;
