@@ -28,7 +28,7 @@ export default function Header() {
           <a href="#" className="hover:text-indigo-600 transition-colors">Courses</a>
           <a href="#" className="hover:text-indigo-600 transition-colors">Pricing</a>
           <a href="#" className="hover:text-indigo-600 transition-colors">Resources</a>
-          <Link href="/signin" className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-all active:scale-95">
+          <Link href="/sign-in" className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-all active:scale-95">
             Get Started
           </Link>
         </div>

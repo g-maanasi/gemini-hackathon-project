@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from "react";
 import { 
     Mail, 
@@ -12,14 +10,16 @@ import {
     Loader2, 
     AlertCircle
 } from 'lucide-react';
-import { LoginInfo, AuthResponse } from "@/types";
+import { LoginInfo } from "@/types";
 import { loginUser } from "@/services/apiService";
+import { useAuthMode } from "../app/sign-in/AuthModeContext";
 
 export default function LoginForm() {
     const [loginData, setLoginData] = useState<LoginInfo>({email: '', password: ''})
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const { mode, setMode } = useAuthMode();
     
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -38,7 +38,7 @@ export default function LoginForm() {
           const expires = new Date();
           expires.setHours(expires.getHours() + 6);
 
-          document.cookie = `access_token=${accessToken}; expires=${expires.toUTCString()}; path=/`;
+          document.cookie = `access_token=${accessToken}; expires=${expires.toUTCString()}; HttpOnly; Secure; SameSite=Lax; path=/`;
           setSuccess(true);
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
@@ -52,10 +52,10 @@ export default function LoginForm() {
           {/* Login Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black text-slate-800 tracking-tight">
-                'Welcome Back'
+                Welcome Back
             </h1>
             <p className="text-slate-500 mt-2 font-medium">
-                'Empower your learning journey today.'
+                Empower your learning journey today.
             </p>
           </div>
 
@@ -112,10 +112,10 @@ export default function LoginForm() {
               {isLoading ? (
                 <Loader2 className="animate-spin" size={22} />
               ) : (
-                <div>
-                  'Sign In Now'
+                <>
+                  Sign In Now
                   <ArrowRight size={20} />
-                </div>
+                </>
               )}
             </button>
           </form>
@@ -139,6 +139,18 @@ export default function LoginForm() {
             <button className="flex justify-center items-center py-3.5 px-4 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm active:scale-95">
               <Twitter size={20} className="text-slate-600" />
             </button>
+          </div>
+
+          <div className="text-center">
+            <p className="text-slate-500 text-sm font-semibold">
+              New to Claritas?
+              <button
+                onClick={() => setMode("signup")}
+                className="text-indigo-600 font-black hover:underline transition-all underline-offset-4 ml-1"
+              >
+                Create Account
+              </button>
+            </p>
           </div>
         </div>
     );
