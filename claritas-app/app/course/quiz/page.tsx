@@ -3,6 +3,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 const Header = () => (
     <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-10">
@@ -218,19 +219,19 @@ function QuizPageContent() {
                         <div className="space-y-6">
                             {results.mcqResults.map((r, i) => (
                                 <div key={i} className={`rounded-xl p-6 ${r.correct ? 'bg-green-50' : 'bg-red-50'}`}>
-                                    <p className="font-semibold text-gray-900 mb-3">{i + 1}. {r.question}</p>
+                                    <div className="font-semibold text-gray-900 mb-3">{i + 1}. <MarkdownRenderer content={r.question} className="inline" /></div>
                                     <div className="space-y-2 mb-3">
                                         {r.options.map((opt, oIdx) => {
                                             let cls = "p-3 rounded-lg border-2 text-sm ";
                                             if (oIdx === r.correctAnswerIndex) cls += "bg-green-100 border-green-400 text-green-900 font-medium";
                                             else if (oIdx === r.selectedIndex && !r.correct) cls += "bg-red-100 border-red-400 text-red-900";
                                             else cls += "bg-white border-transparent opacity-60";
-                                            return <div key={oIdx} className={cls}>{opt}</div>;
+                                            return <div key={oIdx} className={cls}><MarkdownRenderer content={opt} /></div>;
                                         })}
                                     </div>
                                     {!r.correct && (
                                         <div className="text-sm text-red-800 bg-red-100 p-3 rounded-lg">
-                                            <span className="font-bold">Explanation:</span> {r.explanation}
+                                            <span className="font-bold">Explanation:</span> <MarkdownRenderer content={r.explanation} className="inline" />
                                         </div>
                                     )}
                                 </div>
@@ -250,7 +251,7 @@ function QuizPageContent() {
                                 return (
                                     <div key={i} className={`rounded-xl p-6 ${evColor}`}>
                                         <div className="flex justify-between items-start mb-3">
-                                            <p className="font-semibold text-gray-900 text-lg">{i + 1}. {q?.question}</p>
+                                            <div className="font-semibold text-gray-900 text-lg">{i + 1}. <MarkdownRenderer content={q?.question || ''} className="inline" /></div>
                                             <span className="text-sm font-bold px-3 py-1 rounded-full bg-white border border-gray-200">
                                                 {ev.score}/{ev.maxPoints}
                                             </span>
@@ -261,11 +262,11 @@ function QuizPageContent() {
                                         </div>
                                         <div className="mb-4">
                                             <p className="text-xs font-bold uppercase text-gray-500 mb-1">Feedback</p>
-                                            <p className="text-gray-700 text-sm leading-relaxed">{ev.feedback}</p>
+                                            <div className="text-gray-700 text-sm leading-relaxed"><MarkdownRenderer content={ev.feedback} /></div>
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold uppercase text-gray-500 mb-1">Sample Answer</p>
-                                            <p className="text-gray-600 bg-white p-3 rounded-lg border border-gray-200 text-sm whitespace-pre-wrap">{q?.sampleAnswer}</p>
+                                            <div className="text-gray-600 bg-white p-3 rounded-lg border border-gray-200 text-sm"><MarkdownRenderer content={q?.sampleAnswer || ''} /></div>
                                         </div>
                                     </div>
                                 );
@@ -307,7 +308,7 @@ function QuizPageContent() {
                     <div className="space-y-8 mb-12">
                         {quiz?.multipleChoice.map((q, qIdx) => (
                             <div key={qIdx} className="bg-gray-50 rounded-xl p-6">
-                                <p className="font-semibold text-gray-900 mb-4 text-lg">{qIdx + 1}. {q.question}</p>
+                                <div className="font-semibold text-gray-900 mb-4 text-lg">{qIdx + 1}. <MarkdownRenderer content={q.question} className="inline" /></div>
                                 <div className="space-y-3">
                                     {q.options.map((opt, oIdx) => {
                                         const isSelected = mcqAnswers[qIdx] === oIdx;
@@ -316,7 +317,7 @@ function QuizPageContent() {
                                             : "w-full text-left p-4 rounded-lg border-2 bg-white border-transparent hover:bg-gray-200 text-gray-700 hover:shadow-sm transition-all duration-200";
                                         return (
                                             <button key={oIdx} onClick={() => setMcqAnswers(prev => ({ ...prev, [qIdx]: oIdx }))} className={btnClass}>
-                                                {opt}
+                                                <MarkdownRenderer content={opt} />
                                             </button>
                                         );
                                     })}
@@ -330,9 +331,9 @@ function QuizPageContent() {
                     <div className="space-y-8">
                         {quiz?.freeResponse.map((q, qIdx) => (
                             <div key={qIdx} className="bg-gray-50 rounded-xl p-6">
-                                <p className="font-semibold text-gray-900 mb-2 text-lg">
-                                    {(quiz?.multipleChoice.length || 0) + qIdx + 1}. {q.question}
-                                </p>
+                                <div className="font-semibold text-gray-900 mb-2 text-lg">
+                                    {(quiz?.multipleChoice.length || 0) + qIdx + 1}. <MarkdownRenderer content={q.question} className="inline" />
+                                </div>
                                 <p className="text-sm text-gray-500 mb-4">{q.maxPoints} points</p>
                                 <textarea
                                     value={frqAnswers[qIdx] || ''}

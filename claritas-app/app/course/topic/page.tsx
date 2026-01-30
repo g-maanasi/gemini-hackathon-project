@@ -3,6 +3,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 const Header = () => (
     <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-10">
@@ -166,8 +167,8 @@ function TopicPageContent() {
                     {content?.sections.map((section, idx) => (
                         <div key={idx} className="mb-10 last:mb-0">
                             <h2 className="text-xl font-bold text-gray-800 mb-4">{section.heading}</h2>
-                            <div className="prose text-gray-600 whitespace-pre-wrap leading-relaxed text-lg">
-                                {section.content}
+                            <div className="prose text-gray-600 leading-relaxed text-lg">
+                                <MarkdownRenderer content={section.content} />
                             </div>
                         </div>
                     ))}
@@ -187,7 +188,7 @@ function TopicPageContent() {
                     <div className="space-y-8">
                         {content?.quiz.map((q, qIdx) => (
                             <div key={qIdx} className="bg-gray-50 rounded-xl p-6">
-                                <p className="font-semibold text-gray-900 mb-4 text-lg">{qIdx + 1}. {q.question}</p>
+                                <div className="font-semibold text-gray-900 mb-4 text-lg">{qIdx + 1}. <MarkdownRenderer content={q.question} className="inline" /></div>
                                 <div className="space-y-3">
                                     {q.options.map((opt, oIdx) => {
                                         const isSelected = selectedAnswers[qIdx] === oIdx;
@@ -211,7 +212,7 @@ function TopicPageContent() {
                                                 className={btnClass}
                                                 disabled={revealed}
                                             >
-                                                {opt}
+                                                <MarkdownRenderer content={opt} />
                                                 {revealed && isCorrect && (
                                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600">
                                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +249,7 @@ function TopicPageContent() {
                                         <p className="font-bold mb-1 flex items-center gap-2">
                                             {selectedAnswers[qIdx] === q.correctAnswerIndex ? 'Correct!' : 'Not quite right.'}
                                         </p>
-                                        <p className="text-sm leading-relaxed">{q.explanation}</p>
+                                        <div className="text-sm leading-relaxed"><MarkdownRenderer content={q.explanation} /></div>
                                     </div>
                                 )}
                             </div>
