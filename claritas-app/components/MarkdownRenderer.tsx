@@ -16,7 +16,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
             >
-                {content}
+                {content.replace(/\\n/g, '\n')}
             </ReactMarkdown>
         </span>
     );
