@@ -58,19 +58,30 @@ function VideoEmbed({ video }: { video: VideoReference }) {
 
     if (ytId) {
         return (
-            <div className="my-4">
+            <div className="my-5 rounded-xl overflow-hidden border border-gray-200 bg-black">
                 <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                     <iframe
-                        className="absolute top-0 left-0 w-full h-full rounded-lg"
-                        src={`https://www.youtube.com/embed/${ytId}`}
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
                         title={video.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowFullScreen
                     />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                    <span className="font-medium text-gray-700">{video.title}</span> by {video.creatorName}
-                </p>
+                <div className="bg-white px-4 py-3 flex items-center justify-between">
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{video.title}</p>
+                        <p className="text-xs text-gray-500">{video.creatorName}</p>
+                    </div>
+                    <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-gray-600 shrink-0 ml-3"
+                    >
+                        Watch on YouTube
+                    </a>
+                </div>
             </div>
         );
     }
@@ -228,20 +239,20 @@ function TopicPageContent() {
                             </div>
                             {section.videos && section.videos.length > 0 && (
                                 <div className="mt-6">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Related Videos</h3>
                                     {section.videos.map((video, vIdx) => (
                                         <VideoEmbed key={vIdx} video={video} />
                                     ))}
+                                    {content?.searchAttribution && (
+                                        <div
+                                            className="mt-1 opacity-60 scale-90 origin-left"
+                                            dangerouslySetInnerHTML={{ __html: content.searchAttribution }}
+                                        />
+                                    )}
                                 </div>
                             )}
                         </div>
                     ))}
                 </div>
-
-                {/* Google Search Attribution */}
-                {content?.searchAttribution && (
-                    <div className="mb-8" dangerouslySetInnerHTML={{ __html: content.searchAttribution }} />
-                )}
 
                 {/* Quiz Section */}
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">

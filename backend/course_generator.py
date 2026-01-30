@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import requests
 from google import genai
 from google.genai import types
 from typing import Optional, Dict, Any, List
@@ -133,6 +134,21 @@ class CourseGenerator:
             # Fallback or error handling
             return {"error": str(e)}
 
+    def _validate_video_url(self, url: str) -> bool:
+        """Check if a video URL is valid and accessible."""
+        try:
+            # For YouTube URLs, use the oEmbed endpoint (fast, no API key needed)
+            yt_match = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})', url)
+            if yt_match:
+                oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={yt_match.group(1)}&format=json"
+                resp = requests.get(oembed_url, timeout=5)
+                return resp.status_code == 200
+            # For non-YouTube URLs, do a HEAD request
+            resp = requests.head(url, timeout=5, allow_redirects=True)
+            return resp.status_code < 400
+        except Exception:
+            return False
+
     def fetch_videos(self, topic: str, course_title: str = "") -> Dict[str, Any]:
         """Fetch relevant educational videos using Gemini 2.5 Flash with Google Search grounding."""
         search_tool = types.Tool(
@@ -171,11 +187,15 @@ Only include videos that are directly educational and relevant to the topic."""
                     creator_match = re.search(r'\*\*video creator:\*\*\s*(.+)', block)
                     url_match = re.search(r'\*\*video url:\*\*\s*(https?://\S+)', block)
                     if name_match and url_match:
-                        videos.append({
-                            "title": name_match.group(1).strip(),
-                            "url": url_match.group(1).strip(),
-                            "creatorName": creator_match.group(1).strip() if creator_match else "Unknown"
-                        })
+                        video_url = url_match.group(1).strip()
+                        if self._validate_video_url(video_url):
+                            videos.append({
+                                "title": name_match.group(1).strip(),
+                                "url": video_url,
+                                "creatorName": creator_match.group(1).strip() if creator_match else "Unknown"
+                            })
+                        else:
+                            print(f"Skipping unavailable video: {video_url}")
 
             # Extract Google Search attribution
             search_attribution = ""
