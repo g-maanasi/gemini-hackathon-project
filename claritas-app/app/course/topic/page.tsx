@@ -29,15 +29,82 @@ interface QuizQuestion {
     explanation: string;
 }
 
+interface VideoReference {
+    title: string;
+    url: string;
+    creatorName: string;
+}
+
 interface TopicSection {
     heading: string;
     content: string;
+    videos?: VideoReference[];
 }
 
 interface TopicContent {
     title: string;
     sections: TopicSection[];
     quiz: QuizQuestion[];
+    searchAttribution?: string;
+}
+
+function getYouTubeId(url: string): string | null {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : null;
+}
+
+function VideoEmbed({ video }: { video: VideoReference }) {
+    const ytId = getYouTubeId(video.url);
+
+    if (ytId) {
+        return (
+            <div className="my-5 rounded-xl overflow-hidden border border-gray-200 bg-black">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                        title={video.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        allowFullScreen
+                    />
+                </div>
+                <div className="bg-white px-4 py-3 flex items-center justify-between">
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{video.title}</p>
+                        <p className="text-xs text-gray-500">{video.creatorName}</p>
+                    </div>
+                    <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-gray-600 shrink-0 ml-3"
+                    >
+                        Watch on YouTube
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <a
+            href={video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 my-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+        >
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <p className="font-medium text-gray-900">{video.title}</p>
+                <p className="text-sm text-gray-500">by {video.creatorName}</p>
+            </div>
+        </a>
+    );
 }
 
 function TopicPageContent() {
@@ -170,6 +237,19 @@ function TopicPageContent() {
                             <div className="prose text-gray-600 leading-relaxed text-lg">
                                 <MarkdownRenderer content={section.content} />
                             </div>
+                            {section.videos && section.videos.length > 0 && (
+                                <div className="mt-6">
+                                    {section.videos.map((video, vIdx) => (
+                                        <VideoEmbed key={vIdx} video={video} />
+                                    ))}
+                                    {content?.searchAttribution && (
+                                        <div
+                                            className="mt-1 opacity-60 scale-90 origin-left"
+                                            dangerouslySetInnerHTML={{ __html: content.searchAttribution }}
+                                        />
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
