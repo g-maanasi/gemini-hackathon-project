@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from google import genai
 from google.genai import types
@@ -36,9 +37,15 @@ class QuizQuestion(BaseModel):
     correctAnswerIndex: int = Field(description="Index of the correct answer (0-based)")
     explanation: str = Field(description="Explanation of why the answer is correct")
 
+class VideoReference(BaseModel):
+    title: str = Field(description="Title of the video")
+    url: str = Field(description="URL of the video")
+    creatorName: str = Field(description="Name of the video creator/channel")
+
 class TopicSection(BaseModel):
     heading: str = Field(description="Section heading")
     content: str = Field(description="Section content in markdown format")
+    videos: List[VideoReference] = Field(default=[], description="Videos relevant to this section, selected from provided options")
 
 class TopicContent(BaseModel):
     title: str = Field(description="Title of the topic/lesson")
@@ -126,6 +133,65 @@ class CourseGenerator:
             # Fallback or error handling
             return {"error": str(e)}
 
+    def fetch_videos(self, topic: str, course_title: str = "") -> Dict[str, Any]:
+        """Fetch relevant educational videos using Gemini 2.5 Flash with Google Search grounding."""
+        search_tool = types.Tool(
+            google_search=types.GoogleSearch()
+        )
+
+        prompt = f"""Find 3-5 high-quality educational videos about: {topic}
+Context: This is for a course called "{course_title}".
+
+For each video, provide the following in this exact format:
+
+**video name:** [title]
+**video creator:** [channel/creator name]
+**video summary:** [1-2 sentence summary of what the video covers]
+**video url:** [full URL]
+
+---
+
+Only include videos that are directly educational and relevant to the topic."""
+
+        try:
+            response = self.client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=[search_tool]
+                )
+            )
+
+            videos = []
+            if response.text:
+                # Parse the structured text response into video dicts
+                video_blocks = re.split(r'\n---\n', response.text)
+                for block in video_blocks:
+                    name_match = re.search(r'\*\*video name:\*\*\s*(.+)', block)
+                    creator_match = re.search(r'\*\*video creator:\*\*\s*(.+)', block)
+                    url_match = re.search(r'\*\*video url:\*\*\s*(https?://\S+)', block)
+                    if name_match and url_match:
+                        videos.append({
+                            "title": name_match.group(1).strip(),
+                            "url": url_match.group(1).strip(),
+                            "creatorName": creator_match.group(1).strip() if creator_match else "Unknown"
+                        })
+
+            # Extract Google Search attribution
+            search_attribution = ""
+            try:
+                if (response.candidates and response.candidates[0].grounding_metadata
+                        and response.candidates[0].grounding_metadata.search_entry_point):
+                    search_attribution = response.candidates[0].grounding_metadata.search_entry_point.rendered_content
+            except Exception:
+                pass
+
+            return {"videos": videos, "searchAttribution": search_attribution}
+
+        except Exception as e:
+            print(f"Error fetching videos: {e}")
+            return {"videos": [], "searchAttribution": ""}
+
     def _load_topic_prompt(self) -> str:
         prompt_path = os.path.join(os.path.dirname(__file__), 'prompts', 'topic_content.txt')
         with open(prompt_path, 'r') as f:
@@ -133,16 +199,31 @@ class CourseGenerator:
 
     def generate_topic_content(self, course_title: str, unit_title: str, subtopic: str,
                              skill_level: str, age_group: str, additional_context: str = "") -> Dict[str, Any]:
-        
+
+        # Step 1: Fetch relevant videos via grounded search
+        video_data = self.fetch_videos(subtopic, course_title)
+        available_videos = video_data.get("videos", [])
+        search_attribution = video_data.get("searchAttribution", "")
+
+        # Format video list for the prompt
+        if available_videos:
+            video_list_text = "\n".join(
+                f"- Title: {v['title']}, Creator: {v['creatorName']}, URL: {v['url']}"
+                for v in available_videos
+            )
+        else:
+            video_list_text = "No videos available."
+
         system_template = self._load_topic_prompt()
-        
+
         formatted_prompt = system_template.format(
             course_title=course_title,
             unit_title=unit_title,
             subtopic=subtopic,
             skill_level=skill_level,
             age_group=age_group,
-            additional_context=additional_context
+            additional_context=additional_context,
+            available_videos=video_list_text
         )
 
         try:
@@ -154,10 +235,12 @@ class CourseGenerator:
                     'response_schema': TopicContent
                 }
             )
-            
+
             if response.text:
-                # print("DEBUG: Gemini Topic Response:", response.text)
-                return json.loads(response.text)
+                result = json.loads(response.text)
+                # Attach search attribution for Google branding
+                result["searchAttribution"] = search_attribution
+                return result
             else:
                 raise ValueError("Empty response from Gemini")
         except Exception as e:
