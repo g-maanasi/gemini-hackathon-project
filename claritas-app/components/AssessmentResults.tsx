@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CalibrationResult, Subject, GradeLevel } from '../types';
 
