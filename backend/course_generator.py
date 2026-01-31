@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
+from pathlib import Path
 
 # --- Pydantic Models for Structured Output ---
 
@@ -142,3 +143,4 @@ class CourseGenerator:
         except Exception as e:
             print(f"Error generating topic content: {e}")
             return {"error": str(e)}
+

@@ -11,6 +11,7 @@ from typing import Optional, List
 from google import genai
 from dotenv import load_dotenv
 from course_generator import CourseGenerator
+from assessment_generator import AssessmentGenerator
 from database import supabase
 
 load_dotenv()
@@ -20,12 +21,11 @@ app = FastAPI()
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the allowed origins
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 try:
     genai_client = genai.Client()
@@ -34,8 +34,9 @@ except Exception as e:
     # Continue execution, but warn
     print("Please ensure your GEMINI_API_KEY is set in your .env file or environment variables.")
     
-# Initialize CourseGenerator
+# Initialize generators
 course_generator = CourseGenerator()
+assessment_generator = AssessmentGenerator()
 
 # Directory to store course plans locally
 COURSE_PLANS_DIR = os.path.join(os.path.dirname(__file__), "course_plans")
@@ -69,9 +70,7 @@ def save_course_plan_locally(course_plan: dict, topic: str) -> str:
 
 @app.get('/')
 def index():
-    response = supabase.table('todos').select("*").execute()
-    todos = response.data
-    return {"todos": todos} # Return JSON for FastAPI
+    return "backend works"
 
 # Define Pydantic models
 class PromptRequest(BaseModel):
@@ -220,6 +219,74 @@ async def generate_topic(request: TopicRequest):
     except Exception as e:
         print(f"Error in generate_topic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+################################
+# ASSESSMENT-RELATED FUNCTIONS #
+################################
+
+class SelectedOptions(BaseModel):
+    gradeLevel: str = '4th Grade'
+    subject: str = 'Chemistry'
+
+class Question(BaseModel):
+    id: str
+    question: str
+    options: list
+    correctAnswer: str
+    difficulty: str = 'Easy'
+
+class Result(BaseModel):
+    question: str
+    answer: str
+    isCorrect: bool
+
+class QuizAttempt(BaseModel):
+    gradeLevel: str = "4th Grade"
+    subject: str = 'Chemistry'
+    results: List[Result]
+
+class CalibrationResult(BaseModel):
+    score: int = 0
+    masteryLevel: str = 'Beginner'
+    strengths: List[str]
+    weaknesses: List[str]
+    recommendation: str
+
+
+@app.post("/generate_assessment")
+def generate_assessment(selectedOptions: SelectedOptions):
+    try:
+        # Generate the full assessment dict
+        assessment_dict = assessment_generator.generate_questions(
+            subject=selectedOptions.subject,
+            grade_level=selectedOptions.gradeLevel
+        )
+        
+        return assessment_dict['questions']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/evaluate_assessment")
+def evaluate_assessment(quiz_attempt: QuizAttempt):
+    # Call the AI evaluation method
+    # This method should return a dictionary matching CalibrationResult fields
+    evaluation = assessment_generator.evaluate_quiz(
+        subject=quiz_attempt.subject,
+        grade_level=quiz_attempt.gradeLevel,
+        results_input=[r.dict() for r in quiz_attempt.results]
+    )
+
+    # AI should return a dict like:
+    # {
+    #   "score": 80,
+    #   "masteryLevel": "Intermediate",
+    #   "strengths": ["Question X", ...],
+    #   "weaknesses": ["Question Y", ...],
+    #   "recommendation": "Focus on ..."
+    # }
+
+    return CalibrationResult(**evaluation)
 
 ##########################
 # USER-RELATED FUNCTIONS #
