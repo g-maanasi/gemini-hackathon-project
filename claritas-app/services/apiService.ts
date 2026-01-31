@@ -1,7 +1,8 @@
 // services/apiService.ts
-import { PreferenceProfile, UserInformation, LoginInfo, AuthResponse, AssessmentSubmission } from "../types";
+import { useState } from "react";
+import { PreferenceProfile, UserInformation, LoginInfo, AuthResponse, GradeLevel, Subject, AssessmentSubmission } from "../types";
 
-const API_BASE_URL = "http://127.0.0.5000";
+const API_BASE_URL = "http://127.0.0.1:5000";
 
 export const generateCourse = async (profile: PreferenceProfile): Promise<any> => {
     const formData = new FormData();
@@ -27,7 +28,7 @@ export const generateCourse = async (profile: PreferenceProfile): Promise<any> =
 
 export const createUser = async (userCreation: UserInformation): Promise<any> => {
     console.log(userCreation)
-    const response = await fetch('http://127.0.0.1:5000/create_user', {
+    const response = await fetch(`${API_BASE_URL}/create_user`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -44,7 +45,7 @@ export const createUser = async (userCreation: UserInformation): Promise<any> =>
 
 export const loginUser = async (loginAttempt: LoginInfo): Promise<AuthResponse> => {
     console.log(loginAttempt)
-    const response = await fetch('http://127.0.0.1:5000/login', {
+    const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -62,6 +63,19 @@ export const loginUser = async (loginAttempt: LoginInfo): Promise<AuthResponse> 
     return data;
 }
 
-export const generateAssessment = async (info: AssessmentSubmission): Promise<any> => {
+export const generateAssessmentQuestions = async (grade: GradeLevel, subject: Subject): Promise<any> => {
+    const submission: AssessmentSubmission = { subject: subject, gradeLevel: grade }
+    const response = await fetch(`${API_BASE_URL}/generate_assessment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submission),
+    });
 
+    if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+    }
+
+    return response.json();
 }

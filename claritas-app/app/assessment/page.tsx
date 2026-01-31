@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from "react"
 import { CalibrationResult, GradeLevel, Question, Subject, UserAnswer } from "@/types";
+import { generateAssessmentQuestions } from "@/services/apiService";
 import AssessmentResults from "@/components/AssessmentResults";
 import AssessmentSelector from "@/components/AssessmentSelector";
 import StepIndicator from "@/components/StepIndicator";
@@ -26,21 +27,21 @@ const AssessmentPage: React.FC = () => {
     (appState === AppState.QUIZ || appState === AppState.LOADING_RESULTS) ? 1 : 2;
 
     const handleStartAssessment = async () => {
-        setIsGenerating(true);
-       /* try {
-          const generatedQuestions = await generateAssessmentQuestions(grade, subject);
-          if (generatedQuestions.length > 0) {
-            setQuestions(generatedQuestions);
-            setAppState(AppState.QUIZ);
-          } else {
-            alert("We had trouble generating questions. Please try again.");
-          }
-        } catch (error) {
-          console.error(error);
-          alert("Something went wrong. Please check your connection.");
-        } finally {
-          setIsGenerating(false);
-        }*/
+      setIsGenerating(true);
+      try {
+        const generatedQuestions = await generateAssessmentQuestions(grade, subject);
+        if (generatedQuestions.length > 0) {
+          setQuestions(generatedQuestions);
+          setAppState(AppState.QUIZ);
+        } else {
+          alert("We had trouble generating questions. Please try again.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Something went wrong. Please check your connection.");
+      } finally {
+        setIsGenerating(false);
+      }
       };
     
       const handleQuizComplete = async (answers: UserAnswer[]) => {

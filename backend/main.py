@@ -20,12 +20,11 @@ app = FastAPI()
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the allowed origins
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 try:
     genai_client = genai.Client()
@@ -69,9 +68,7 @@ def save_course_plan_locally(course_plan: dict, topic: str) -> str:
 
 @app.get('/')
 def index():
-    response = supabase.table('todos').select("*").execute()
-    todos = response.data
-    return {"todos": todos} # Return JSON for FastAPI
+    return "backend works"
 
 # Define Pydantic models
 class PromptRequest(BaseModel):
@@ -220,6 +217,15 @@ async def generate_topic(request: TopicRequest):
     except Exception as e:
         print(f"Error in generate_topic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class SelectedOptions(BaseModel):
+    gradeLevel: str = '4th Grade'
+    subject: str = 'Chemistry'
+
+@app.post('/generate_assessment')
+def generate_assessment(selectedOptions: SelectedOptions):
+    print(selectedOptions)
+    return { 'success': True }
 
 ##########################
 # USER-RELATED FUNCTIONS #
