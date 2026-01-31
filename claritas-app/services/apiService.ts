@@ -1,6 +1,6 @@
 // services/apiService.ts
 import { useState } from "react";
-import { PreferenceProfile, UserInformation, LoginInfo, AuthResponse, GradeLevel, Subject, AssessmentSubmission, Question } from "../types";
+import { PreferenceProfile, UserInformation, LoginInfo, AuthResponse, GradeLevel, Subject, AssessmentSubmission, Question, CalibrationResult, Result } from "../types";
 
 const API_BASE_URL = "http://127.0.0.1:5000";
 
@@ -78,4 +78,8 @@ export const generateAssessmentQuestions = async (grade: GradeLevel, subject: Su
     }
 
     return response.json();
+}
+
+export const evaluateAssessment = async (grade: GradeLevel, subject: Subject, finalScore: Result[]):  Promise<any> => {
+    
 }

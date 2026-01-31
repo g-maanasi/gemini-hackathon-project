@@ -220,6 +220,11 @@ async def generate_topic(request: TopicRequest):
         print(f"Error in generate_topic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+################################
+# ASSESSMENT-RELATED FUNCTIONS #
+################################
+
 class SelectedOptions(BaseModel):
     gradeLevel: str = '4th Grade'
     subject: str = 'Chemistry'
@@ -231,19 +236,33 @@ class Question(BaseModel):
     correctAnswer: str
     difficulty: str = 'Easy'
 
-#@app.post("/generate_assessment", response_model=List[Question])
+class Result(BaseModel):
+    question: str
+    answer: str
+    isCorrect: bool
+
+class QuizAttempt(BaseModel):
+    gradeLevel: str = "4th Grade"
+    subject: str = 'Chemistry'
+    results: List[Result]
+
+
 @app.post("/generate_assessment")
 def generate_assessment(selectedOptions: SelectedOptions):
-    # Generate the full assessment dict
-    questions_list = assessment_generator.generate_questions(
-        subject=selectedOptions.subject,
-        grade_level=selectedOptions.gradeLevel
-    )
-    
-    print(questions_list)
+    try:
+        # Generate the full assessment dict
+        assessment_dict = assessment_generator.generate_questions(
+            subject=selectedOptions.subject,
+            grade_level=selectedOptions.gradeLevel
+        )
+        
+        return assessment_dict['questions']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-    # Return as list of Pydantic Question models
-    return {'success': True}
+@app.post("/evaluate_assessment")
+def evaluate_assessment(quiz_attempt: QuizAttempt):
+    return
 
 ##########################
 # USER-RELATED FUNCTIONS #

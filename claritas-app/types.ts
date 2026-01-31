@@ -83,3 +83,10 @@ export interface CalibrationResult {
   weaknesses: string[];
   recommendation: string;
 }
+
+export interface Result {
+    question: string;
+    answer: string;
+    isCorrect: boolean;
+}
+  

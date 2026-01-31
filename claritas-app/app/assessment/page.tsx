@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from "react"
-import { CalibrationResult, GradeLevel, Question, Subject, UserAnswer } from "@/types";
-import { generateAssessmentQuestions } from "@/services/apiService";
+import { CalibrationResult, GradeLevel, Question, Result, Subject, UserAnswer } from "@/types";
+import { evaluateAssessment, generateAssessmentQuestions } from "@/services/apiService";
 import AssessmentResults from "@/components/AssessmentResults";
 import AssessmentSelector from "@/components/AssessmentSelector";
 import StepIndicator from "@/components/StepIndicator";
@@ -47,7 +47,7 @@ const AssessmentPage: React.FC = () => {
       const handleQuizComplete = async (answers: UserAnswer[]) => {
         setAppState(AppState.LOADING_RESULTS);
         try {
-          const results = answers.map(ans => {
+          const results: Result[] = answers.map(ans => {
             const q = questions.find(question => question.id === ans.questionId);
             return {
               question: q?.question || '',
@@ -56,9 +56,9 @@ const AssessmentPage: React.FC = () => {
             };
           });
     
-          //const evaluation = await evaluateAssessment(grade, subject, results);
-          //setCalibrationResult(evaluation);
-          //setAppState(AppState.RESULTS);
+          const evaluation = await evaluateAssessment(grade, subject, results);
+          setCalibrationResult(evaluation);
+          setAppState(AppState.RESULTS);
         } catch (error) {
           console.error(error);
           alert("Failed to evaluate results.");
