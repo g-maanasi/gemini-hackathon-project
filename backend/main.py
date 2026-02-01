@@ -354,23 +354,5 @@ def create_user(user: User):
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-@app.post("/login")
-def login(login: LoginRequest):
-    auth_response = supabase.auth.sign_in_with_password({
-        "email": login.email,
-        "password": login.password
-    })
-
-    if auth_response.user is None:
-        return JSONResponse({"error": "Invalid credentials"}, status_code=401)
-
-    print({"access_token": auth_response.session.access_token})
-    return {"access_token": auth_response.session.access_token}
-
-
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=5000)
