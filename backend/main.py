@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from course_generator import CourseGenerator
 from assessment_generator import AssessmentGenerator
 from database import supabase
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ app = FastAPI()
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,10 +34,14 @@ except Exception as e:
     print(f"Error configuring Gemini client: {e}")
     # Continue execution, but warn
     print("Please ensure your GEMINI_API_KEY is set in your .env file or environment variables.")
-    
+
 # Initialize generators
 course_generator = CourseGenerator()
 assessment_generator = AssessmentGenerator()
+
+@app.get("/")
+def root():
+    return {"message": "works"}
 
 # Directory to store course plans locally
 COURSE_PLANS_DIR = os.path.join(os.path.dirname(__file__), "course_plans")
@@ -67,10 +72,6 @@ def save_course_plan_locally(course_plan: dict, topic: str) -> str:
         json.dump(data_to_save, f, indent=2, ensure_ascii=False)
 
     return course_id
-
-@app.get('/')
-def index():
-    return "backend works"
 
 # Define Pydantic models
 class PromptRequest(BaseModel):
@@ -358,37 +359,18 @@ class LoginRequest(BaseModel):
     password: str
 
 @app.post("/login")
-def login(response: Response, login: LoginRequest):
-    try:
-        # Sign in using Supabase Auth
-        auth_response = supabase.auth.sign_in_with_password({
-            "email": login.email,
-            "password": login.password
-        })
+def login(login: LoginRequest):
+    auth_response = supabase.auth.sign_in_with_password({
+        "email": login.email,
+        "password": login.password
+    })
 
-        # Check if login was successful
-        if auth_response.user is None:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+    if auth_response.user is None:
+        return JSONResponse({"error": "Invalid credentials"}, status_code=401)
 
-        access_token = auth_response.session.access_token
-        refresh_token = auth_response.session.refresh_token
+    print({"access_token": auth_response.session.access_token})
+    return {"access_token": auth_response.session.access_token}
 
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=60 * 60 * 6
-        )
-        
-        return {
-            "message": "Login successful"
-        }
-
-    except Exception as e:
-        # Handles network or Supabase errors
-        raise HTTPException(status_code=503, detail=f"Supabase service unavailable: {str(e)}")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=5000)

@@ -8,13 +8,16 @@ import {
     Chrome, 
     Twitter, 
     Loader2, 
-    AlertCircle
+    AlertCircle,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation'
 import { LoginInfo } from "@/types";
 import { loginUser } from "@/services/apiService";
 import { useAuthMode } from "../app/sign-in/AuthModeContext";
+import { redirect } from "next/dist/server/api-utils";
 
 export default function LoginForm() {
+    const router = useRouter()
     const [loginData, setLoginData] = useState<LoginInfo>({email: '', password: ''})
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -32,8 +35,9 @@ export default function LoginForm() {
         setIsLoading(true);
 
         try {
-          const result = await loginUser(loginData)
+          const response = await loginUser(loginData)
           setSuccess(true);
+          router.push('/dashboard') // <-- redirect
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
         } finally {

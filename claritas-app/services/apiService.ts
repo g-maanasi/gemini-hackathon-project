@@ -45,11 +45,12 @@ export const createUser = async (userCreation: UserInformation): Promise<any> =>
 
 export const loginUser = async (loginAttempt: LoginInfo): Promise<AuthResponse> => {
     console.log(loginAttempt)
-    const response = await fetch(`${API_BASE_URL}/login`, {
+    const response = await fetch('api/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(loginAttempt),
     });
 
@@ -94,6 +95,7 @@ export const evaluateAssessment = async (grade: GradeLevel, subject: Subject, re
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(attempt),
     });
 
