@@ -28,10 +28,10 @@ const AssessmentResults: React.FC<ResultSummaryProps> = ({ result, subject, grad
           <div className="mt-4 w-full bg-slate-200 h-3 rounded-full overflow-hidden">
             <div 
               className="bg-indigo-600 h-full rounded-full" 
-              style={{ width: `${result.score * 100}%` }}
+              style={{ width: `${result.score}%` }}
             />
           </div>
-          <p className="text-xs text-slate-400 mt-2">Score: {Math.round(result.score * 100)}%</p>
+          <p className="text-xs text-slate-400 mt-2">Score: {Math.round(result.score)}%</p>
         </div>
 
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">

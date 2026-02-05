@@ -32,6 +32,7 @@ const AssessmentPage: React.FC = () => {
         const generatedQuestions = await generateAssessmentQuestions(grade, subject);
         if (generatedQuestions.length > 0) {
           setQuestions(generatedQuestions);
+          console.log(generatedQuestions)
           setAppState(AppState.QUIZ);
         } else {
           alert("We had trouble generating questions. Please try again.");
@@ -55,7 +56,8 @@ const AssessmentPage: React.FC = () => {
               isCorrect: ans.isCorrect
             };
           });
-    
+          
+          console.log(results)
           const evaluation = await evaluateAssessment(grade, subject, results);
           setCalibrationResult(evaluation);
           setAppState(AppState.RESULTS);

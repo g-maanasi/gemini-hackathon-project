@@ -28,9 +28,7 @@ class Result(BaseModel):
     answer: str
     isCorrect: bool
 
-class CalibrationResult(BaseModel):
-    score: int = 0
-    masteryLevel: str = 'Beginner'
+class Assessment(BaseModel):
     strengths: List[str]
     weaknesses: List[str]
     recommendation: str
@@ -95,7 +93,11 @@ class AssessmentGenerator:
         system_template = self._load_prompt('result_content.txt')
 
         # Replace placeholders in prompt
-        formatted_prompt = system_template.format(subject=subject, grade_level=grade_level)
+        formatted_prompt = system_template.format(
+            subject=subject,
+            grade_level=grade_level,
+            results=json.dumps(results_input, indent=2)
+        )
 
         try:
             response = self.client.models.generate_content(
@@ -103,7 +105,7 @@ class AssessmentGenerator:
                 contents=[formatted_prompt],
                 config={
                     'response_mime_type': 'application/json',
-                    'response_schema': CalibrationResult
+                    'response_schema': Assessment
                 }
             )
             

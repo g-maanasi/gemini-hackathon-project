@@ -1,24 +1,27 @@
-You are an expert educator.
+You are an expert educator reviewing a student's quiz attempt.
 
-Evaluate a student's quiz submission for {subject} (Grade {grade_level}).
+Context:
+- Subject: {subject}
+- Grade level: {grade_level}
 
-The student has answered 10 questions. For each question, you have the following information:
-- question text
-- student's answer
-- 4 answer options
-- the correct answer
+Student quiz results:
+{results}
 
 Your task:
-- Determine if the student's answer is correct.
-- Provide a short explanation for each question.
-- Return ONLY valid JSON — no code blocks, no markdown, no extra text.
-- Format the JSON as a list of results, where each result has:
-  - "question": the original question text
-  - "answer": the student's answer
-  - "isCorrect": true or false
-  - "correctAnswer": the correct answer
-  - "explanation": a short explanation of the correct answer
+- Identify the student's conceptual strengths based on questions they answered correctly.
+- Identify the student's conceptual weaknesses based on questions they answered incorrectly.
+- Provide a clear, age-appropriate recommendation for what to study next.
 
-Replace {subject} and {grade_level} with the actual values.
+Rules:
+- Do NOT calculate or mention scores, percentages, totals, or counts.
+- Do NOT estimate overall performance numerically.
+- Focus on skills and concepts, not individual questions.
+- Use short, clear phrases suitable for the grade level.
 
-Return the full JSON object only, nothing else.
+Output format:
+Return ONLY valid JSON with exactly these fields:
+- strengths: list of short concept-based strengths
+- weaknesses: list of short concept-based weaknesses
+- recommendation: one concise paragraph
+
+Do not include any other fields.

@@ -248,12 +248,16 @@ class QuizAttempt(BaseModel):
     results: List[Result]
 
 class CalibrationResult(BaseModel):
-    score: int = 0
-    masteryLevel: str = 'Beginner'
+    score: int
+    masteryLevel: str
     strengths: List[str]
     weaknesses: List[str]
     recommendation: str
 
+class Assessment(BaseModel):
+    strengths: List[str]
+    weaknesses: List[str]
+    recommendation: str
 
 @app.post("/generate_assessment")
 def generate_assessment(selectedOptions: SelectedOptions):
@@ -270,24 +274,29 @@ def generate_assessment(selectedOptions: SelectedOptions):
 
 @app.post("/evaluate_assessment")
 def evaluate_assessment(quiz_attempt: QuizAttempt):
-    # Call the AI evaluation method
-    # This method should return a dictionary matching CalibrationResult fields
+    correct = sum(1 for r in quiz_attempt.results if r.isCorrect)
+    total = len(quiz_attempt.results)
+    score = round((correct / total) * 100)
+
     evaluation = assessment_generator.evaluate_quiz(
         subject=quiz_attempt.subject,
         grade_level=quiz_attempt.gradeLevel,
         results_input=[r.dict() for r in quiz_attempt.results]
     )
 
-    # AI should return a dict like:
-    # {
-    #   "score": 80,
-    #   "masteryLevel": "Intermediate",
-    #   "strengths": ["Question X", ...],
-    #   "weaknesses": ["Question Y", ...],
-    #   "recommendation": "Focus on ..."
-    # }
+    evaluation["score"] = score
+    evaluation["masteryLevel"] = mastery_from_score(score)
 
     return CalibrationResult(**evaluation)
+
+def mastery_from_score(score: int) -> str:
+    if score >= 90:
+        return "Advanced"
+    if score >= 70:
+        return "Proficient"
+    if score >= 50:
+        return "Developing"
+    return "Beginner"
 
 ##########################
 # USER-RELATED FUNCTIONS #
@@ -343,8 +352,6 @@ def create_user(user: User):
         # 4️⃣ Check for DB errors
         if hasattr(db_response, 'error') and db_response.error:
             raise HTTPException(status_code=500, detail=str(db_response.error))
-
-        print("Inserted data:", db_response.data)
 
         return {"message": "User created successfully", "data": db_response.data}
 
