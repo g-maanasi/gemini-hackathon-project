@@ -13,7 +13,7 @@ interface PreferencesContainerProps {
 const PreferencesPage: React.FC<PreferencesContainerProps> = ({ onBackToHome }) => {
     const [courseData, setCourseData] = useState<any | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-
+    
     const handleFormComplete = (data: any) => {
         setCourseData(data);
     };

@@ -49,8 +49,10 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
     const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
     useEffect(() => {
-        if (!session) {
-            router.push('/sign-in')
+        if (session == null) {
+            router.push('/')
+        } else {
+            console.log(session.email)
         }
     })
 
@@ -72,33 +74,44 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
         e.preventDefault();
         setLoading(true);
         onProcessingChange(true);
-
+    
         try {
             if (session) {
-                const userInformation: UserInformation = { name: session.name!, email: session.email!, password: session.password! }
-                const userPrefs: UserPreferences = { role: profile.role, educationLevel: profile.educationLevel, grade: profile.grade, state: profile.state,
-                    traits: profile.traits.join(','), learningStyle: profile.learningStyle
+                const userInformation: UserInformation = {
+                    name: session.name!,
+                    email: session.email!,
+                    password: session.password!,
+                };
+    
+                const userPrefs: UserPreferences = {
+                    role: profile.role,
+                    educationLevel: profile.educationLevel,
+                    grade: profile.grade,
+                    state: profile.state,
+                    traits: profile.traits.join(','), // or keep as array if your backend expects array
+                    learningStyle: profile.learningStyle,
+                };
+    
+                const result = await createUser(userInformation, userPrefs);
+    
+                // ✅ result is the JSON returned by your API
+                if (result.error) {
+                    throw new Error(result.error);
                 }
-
-                const response = await createUser(userInformation, userPrefs)
-
-                if (!response.ok) {
-                    throw new Error(`Server responded with ${response.status}`);
-                }
-
-                const result = await response.json();
+    
                 router.push('/dashboard');
             } else {
                 router.push('/sign-in');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Course Generation Error:", error);
-            alert("The AI engine failed to synthesize your roadmap.");
+            alert(error.message || "The AI engine failed to synthesize your roadmap.");
         } finally {
             setLoading(false);
             onProcessingChange(false);
         }
     };
+    
 
     return (
         <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-100 border border-white/60 max-w-4xl width-100 mx-auto overflow-y-hidden">

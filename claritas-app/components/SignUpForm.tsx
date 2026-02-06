@@ -67,7 +67,7 @@ export default function SignUpForm() {
         try {
           setCredentials(signUpData.name, signUpData.email, signUpData.password)
           setSuccess(true);
-          router.push('/preferences');
+          router.push('/sign-in/preferences');
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
         } finally {

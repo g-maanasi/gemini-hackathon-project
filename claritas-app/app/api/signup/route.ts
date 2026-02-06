@@ -1,90 +1,113 @@
 // app/api/signup/route.ts
+'use server'; // Optional but good for clarity
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { UserInformation } from '@/types'; // { name: string; email: string; password: string }
 
-// Initialize Supabase client (server secret key!)
+// Initialize Supabase client (server-only secret)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_SUPABASE_SECRET_KEY! // server-only
+  process.env.NEXT_SUPABASE_SECRET_KEY!
 );
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password }: UserInformation = await req.json();
+    const { userCreation, userPreferences } = await req.json();
+
+    const { name, email, password } = userCreation;
+    const { role, state, grade, learningStyle, traits } = userPreferences || {};
+
+    console.log(traits)
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: 'Name, email, and password required' },
+        { success: false, message: 'Name, email, and password required' },
         { status: 400 }
       );
     }
 
-    // 1️⃣ Sign up user (creates session automatically if allowed)
+    // 1️⃣ Sign up user in Supabase Auth
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/welcome`, // optional
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/welcome`,
       },
     });
 
     if (signUpError) {
-      console.error('Supabase signUp error:', signUpError.message, signUpError);
-      // Handle already registered case
-      if (signUpError.message.includes('already registered')) {
-        return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
-      }
-      return NextResponse.json({ error: signUpError.message }, { status: 400 });
+      console.error('Supabase signUp error:', signUpError);
+      const status = signUpError.message.includes('already registered') ? 409 : 400;
+      return NextResponse.json({ success: false, message: signUpError.message }, { status });
     }
 
-    // 2️⃣ Extract user ID from signUpData
+    // 2️⃣ Extract user ID
     const userId = signUpData.user?.id;
-    console.log('signUpData:', JSON.stringify(signUpData, null, 2));
     if (!userId) {
       console.error('No user ID returned from signUp');
-      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+      return NextResponse.json({ success: false, message: 'Failed to create user' }, { status: 500 });
     }
 
     // 3️⃣ Insert profile info into 'users' table
     const { data: dbData, error: dbError } = await supabase
       .from('users')
-      .insert({ auth_id: userId, name, email });
+      .insert({
+        auth_id: userId,
+        name,
+        email,
+        state: state || '',
+        grade_level: grade || '',
+        isParent: role !== 'Student',
+      });
 
     if (dbError) {
-      console.error('DB insert error:', dbError.message, dbError);
-      return NextResponse.json({ error: dbError.message }, { status: 500 });
+      console.error('DB insert error:', dbError);
+      return NextResponse.json({ success: false, message: dbError.message }, { status: 500 });
     }
 
-    // 4️⃣ Get JWT (from the session created at signUp)
+    // 4️⃣ Insert preferences into 'preferences' table
+    const { data: prefData, error: prefError } = await supabase
+      .from('preferences')
+      .insert({
+        user_id: userId,
+        learning_style: learningStyle,
+        learning_traits: traits,
+      });
+
+    if (prefError) {
+      console.error('DB insert (preferences) error:', prefError);
+      // Optional: rollback user insert
+      await supabase.from('users').delete().eq('auth_id', userId);
+      return NextResponse.json({ success: false, message: prefError.message }, { status: 500 });
+    }
+
+    // 5️⃣ Handle JWT / cookie
     const token = signUpData.session?.access_token;
-    if (!token) {
-      // If no session returned, user may need email confirmation
-      return NextResponse.json({
-        message: 'User created. Please confirm your email to login.',
-        data: dbData,
+
+    const response = NextResponse.json({
+      success: true,
+      message: token
+        ? 'User created successfully'
+        : 'User created. Please confirm your email to login.'
+    });
+
+    if (token) {
+      response.cookies.set({
+        name: 'access_token',
+        value: token,
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24, // 1 day
       });
     }
-
-    // 5️⃣ Set HttpOnly cookie
-    const response = NextResponse.json({
-      message: 'User created successfully',
-      data: dbData,
-    });
-
-    response.cookies.set({
-      name: 'access_token',
-      value: token,
-      httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day
-    });
-
     return response;
   } catch (err: any) {
     console.error('Error in /api/signup:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

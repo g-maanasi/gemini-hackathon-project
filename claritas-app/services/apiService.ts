@@ -28,12 +28,12 @@ export const generateCourse = async (profile: PreferenceProfile): Promise<any> =
 
 export const createUser = async (userCreation: UserInformation, userPreferences: UserPreferences): Promise<any> => {
     console.log(userCreation)
-    const response = await fetch(`api/signup`, {
+    const response = await fetch('http://localhost:3000/api/signup', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userCreation),
+        body: JSON.stringify( { userCreation, userPreferences } ),
     });
 
     if (!response.ok) {
