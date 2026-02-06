@@ -6,6 +6,7 @@ from google import genai
 from google.genai import types
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
+from pathlib import Path
 
 # --- Pydantic Models for Structured Output ---
 

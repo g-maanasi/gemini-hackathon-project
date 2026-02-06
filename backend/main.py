@@ -3,14 +3,17 @@ import json
 import uuid
 from datetime import datetime
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from google import genai
 from dotenv import load_dotenv
 from course_generator import CourseGenerator
+from assessment_generator import AssessmentGenerator
+from database import supabase
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -19,7 +22,7 @@ app = FastAPI()
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the allowed origins
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,13 +35,13 @@ except Exception as e:
     # Continue execution, but warn
     print("Please ensure your GEMINI_API_KEY is set in your .env file or environment variables.")
 
-supabase: Client = create_client(
-    os.environ.get("SUPABASE_URL"),
-    os.environ.get("SUPABASE_KEY")
-)
-
-# Initialize CourseGenerator
+# Initialize generators
 course_generator = CourseGenerator()
+assessment_generator = AssessmentGenerator()
+
+@app.get("/")
+def root():
+    return {"message": "works"}
 
 # Directory to store course plans locally
 COURSE_PLANS_DIR = os.path.join(os.path.dirname(__file__), "course_plans")
@@ -69,12 +72,6 @@ def save_course_plan_locally(course_plan: dict, topic: str) -> str:
         json.dump(data_to_save, f, indent=2, ensure_ascii=False)
 
     return course_id
-
-@app.get('/')
-def index():
-    response = supabase.table('todos').select("*").execute()
-    todos = response.data
-    return {"todos": todos} # Return JSON for FastAPI
 
 # Define Pydantic models
 class PromptRequest(BaseModel):
@@ -223,6 +220,146 @@ async def generate_topic(request: TopicRequest):
     except Exception as e:
         print(f"Error in generate_topic: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+################################
+# ASSESSMENT-RELATED FUNCTIONS #
+################################
+
+class SelectedOptions(BaseModel):
+    gradeLevel: str = '4th Grade'
+    subject: str = 'Chemistry'
+
+class Question(BaseModel):
+    id: str
+    question: str
+    options: list
+    correctAnswer: str
+    difficulty: str = 'Easy'
+
+class Result(BaseModel):
+    question: str
+    answer: str
+    isCorrect: bool
+
+class QuizAttempt(BaseModel):
+    gradeLevel: str = "4th Grade"
+    subject: str = 'Chemistry'
+    results: List[Result]
+
+class CalibrationResult(BaseModel):
+    score: int
+    masteryLevel: str
+    strengths: List[str]
+    weaknesses: List[str]
+    recommendation: str
+
+class Assessment(BaseModel):
+    strengths: List[str]
+    weaknesses: List[str]
+    recommendation: str
+
+@app.post("/generate_assessment")
+def generate_assessment(selectedOptions: SelectedOptions):
+    try:
+        # Generate the full assessment dict
+        assessment_dict = assessment_generator.generate_questions(
+            subject=selectedOptions.subject,
+            grade_level=selectedOptions.gradeLevel
+        )
+        
+        return assessment_dict['questions']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/evaluate_assessment")
+def evaluate_assessment(quiz_attempt: QuizAttempt):
+    correct = sum(1 for r in quiz_attempt.results if r.isCorrect)
+    total = len(quiz_attempt.results)
+    score = round((correct / total) * 100)
+
+    evaluation = assessment_generator.evaluate_quiz(
+        subject=quiz_attempt.subject,
+        grade_level=quiz_attempt.gradeLevel,
+        results_input=[r.dict() for r in quiz_attempt.results]
+    )
+
+    evaluation["score"] = score
+    evaluation["masteryLevel"] = mastery_from_score(score)
+
+    return CalibrationResult(**evaluation)
+
+def mastery_from_score(score: int) -> str:
+    if score >= 90:
+        return "Advanced"
+    if score >= 70:
+        return "Proficient"
+    if score >= 50:
+        return "Developing"
+    return "Beginner"
+
+##########################
+# USER-RELATED FUNCTIONS #
+##########################
+class User(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Alice",
+                "email": "alice@example.com",
+                "password": "securePassword123"
+            }
+        }
+    }
+
+@app.post("/create_user")
+def create_user(user: User):
+    try:
+        # 1️⃣ Check if email already exists in Supabase Auth
+        try:
+            existing_user = supabase.auth.admin.get_user_by_email(user.email)
+            if existing_user:
+                raise {"message": "User created successfully", "data": 'email'}
+        except Exception as e:
+            # Supabase may throw if user does not exist; ignore that
+            pass
+
+        try:
+            auth_response = supabase.auth.admin.create_user({
+                "email": user.email,
+                "password": user.password,
+                "email_confirm": True  # Automatically confirm email
+            })
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Supabase service unavailable: {str(e)}")
+
+        if not auth_response or not hasattr(auth_response, "user") or not auth_response.user:
+            raise HTTPException(status_code=400, detail="Auth signup failed")
+
+        user_id = auth_response.user.id
+
+        # 3️⃣ Insert profile info into your users table
+        db_response = supabase.table("users").insert({
+            "auth_id": user_id,
+            "name": user.name,
+            "email": user.email
+        }).execute()
+
+        # 4️⃣ Check for DB errors
+        if hasattr(db_response, 'error') and db_response.error:
+            raise HTTPException(status_code=500, detail=str(db_response.error))
+
+        return {"message": "User created successfully", "data": db_response.data}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
 
 class ModuleQuizRequest(BaseModel):
     courseId: str
