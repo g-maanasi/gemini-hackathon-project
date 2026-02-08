@@ -4,7 +4,7 @@ import uuid
 import asyncio
 from datetime import datetime
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Response, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from pydantic import BaseModel, EmailStr
@@ -677,133 +677,8 @@ async def quiz_help_text(request: QuizHelpTextRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.websocket("/ws/quiz_help/voice")
-async def quiz_help_voice(websocket: WebSocket):
-    """WebSocket endpoint for voice-based Socratic tutoring via Gemini Live API."""
-    await websocket.accept()
-    session = None
-    try:
-        # Wait for init message with question context
-        init_data = await websocket.receive_json()
-        course_id = init_data.get("courseId")
-        unit_number = init_data.get("unitNumber")
-        question_index = init_data.get("questionIndex")
-        question_type = init_data.get("questionType", "mcq")
 
-        # Load quiz + course data
-        quiz_filename = f"{course_id}_module_quiz_{unit_number}.json"
-        quiz_filepath = os.path.join(COURSE_PLANS_DIR, quiz_filename)
-        if not os.path.exists(quiz_filepath):
-            await websocket.send_json({"error": "Quiz not found"})
-            await websocket.close()
-            return
 
-        with open(quiz_filepath, 'r', encoding='utf-8') as f:
-            quiz_data = json.load(f)
-
-        course_filepath = os.path.join(COURSE_PLANS_DIR, f"{course_id}.json")
-        if not os.path.exists(course_filepath):
-            await websocket.send_json({"error": "Course not found"})
-            await websocket.close()
-            return
-
-        with open(course_filepath, 'r', encoding='utf-8') as f:
-            course_data = json.load(f)
-        course_plan = course_data["course_plan"]
-        skill_level = course_plan.get("metadata", {}).get("skillLevel", "Intermediate")
-        age_group = course_plan.get("metadata", {}).get("ageGroup", "Adult")
-
-        # Get the question
-        if question_type == "mcq":
-            questions = quiz_data.get("multipleChoice", [])
-        else:
-            questions = quiz_data.get("freeResponse", [])
-
-        if question_index < 0 or question_index >= len(questions):
-            await websocket.send_json({"error": "Question not found"})
-            await websocket.close()
-            return
-
-        question = questions[question_index]
-
-        # Get LiveConnectConfig
-        live_config = quiz_helper.get_voice_config(
-            question=question,
-            question_type=question_type,
-            skill_level=skill_level,
-            age_group=age_group
-        )
-
-        await websocket.send_json({"status": "ready"})
-
-        # Connect to Gemini Live API
-        async with quiz_helper.client.aio.live.connect(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
-            config=live_config
-        ) as session:
-
-            async def forward_audio_to_gemini():
-                """Proxy audio from frontend WebSocket to Gemini Live API."""
-                try:
-                    while True:
-                        data = await websocket.receive()
-                        if "bytes" in data:
-                            await session.send(
-                                input=types.LiveClientRealtimeInput(
-                                    media_chunks=[types.Blob(
-                                        data=data["bytes"],
-                                        mime_type="audio/pcm;rate=16000"
-                                    )]
-                                )
-                            )
-                        elif "text" in data:
-                            msg = json.loads(data["text"])
-                            if msg.get("type") == "stop":
-                                break
-                except WebSocketDisconnect:
-                    pass
-                except Exception as e:
-                    print(f"Error forwarding audio to Gemini: {e}")
-
-            async def forward_audio_from_gemini():
-                """Proxy audio from Gemini Live API back to frontend WebSocket."""
-                try:
-                    async for response in session.receive():
-                        if response.data:
-                            # Send raw audio bytes back to frontend
-                            await websocket.send_bytes(response.data)
-                        if response.text:
-                            # Send transcript as JSON
-                            await websocket.send_json({
-                                "type": "transcript",
-                                "text": response.text
-                            })
-                except WebSocketDisconnect:
-                    pass
-                except Exception as e:
-                    print(f"Error forwarding audio from Gemini: {e}")
-
-            # Run both tasks concurrently
-            await asyncio.gather(
-                forward_audio_to_gemini(),
-                forward_audio_from_gemini()
-            )
-
-    except WebSocketDisconnect:
-        print("Voice WebSocket disconnected")
-    except Exception as e:
-        print(f"Error in voice quiz help: {e}")
-        import traceback
-        traceback.print_exc()
-        try:
-            await websocket.send_json({"error": str(e)})
-        except Exception:
-            pass
-    finally:
-        try:
-            await websocket.close()
-        except Exception:
-            pass
 
 
 if __name__ == '__main__':

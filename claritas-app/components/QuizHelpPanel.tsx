@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import TextChat from './TextChat';
-import VoiceChat from './VoiceChat';
 
 interface QuizHelpPanelProps {
     isOpen: boolean;
@@ -14,8 +13,6 @@ interface QuizHelpPanelProps {
 }
 
 export default function QuizHelpPanel({ isOpen, onClose, questionIndex, questionType, courseId, unitNumber }: QuizHelpPanelProps) {
-    const [mode, setMode] = useState<'text' | 'voice'>('text');
-
     return (
         <>
             {/* Backdrop */}
@@ -27,9 +24,8 @@ export default function QuizHelpPanel({ isOpen, onClose, questionIndex, question
             )}
 
             {/* Panel */}
-            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
-                isOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}>
+            <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <div>
@@ -46,47 +42,14 @@ export default function QuizHelpPanel({ isOpen, onClose, questionIndex, question
                     </button>
                 </div>
 
-                {/* Mode toggle */}
-                <div className="flex px-5 pt-3 pb-2 gap-2">
-                    <button
-                        onClick={() => setMode('text')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            mode === 'text'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                    >
-                        Text Chat
-                    </button>
-                    <button
-                        onClick={() => setMode('voice')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            mode === 'voice'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                    >
-                        Voice Chat
-                    </button>
-                </div>
-
                 {/* Chat area */}
                 <div className="flex-1 overflow-hidden">
-                    {mode === 'text' ? (
-                        <TextChat
-                            courseId={courseId}
-                            unitNumber={unitNumber}
-                            questionIndex={questionIndex}
-                            questionType={questionType}
-                        />
-                    ) : (
-                        <VoiceChat
-                            courseId={courseId}
-                            unitNumber={unitNumber}
-                            questionIndex={questionIndex}
-                            questionType={questionType}
-                        />
-                    )}
+                    <TextChat
+                        courseId={courseId}
+                        unitNumber={unitNumber}
+                        questionIndex={questionIndex}
+                        questionType={questionType}
+                    />
                 </div>
             </div>
         </>
