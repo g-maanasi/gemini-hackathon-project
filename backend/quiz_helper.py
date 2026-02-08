@@ -78,21 +78,4 @@ class QuizHelper:
             print(f"Error in text_help: {e}")
             return "Sorry, I'm having trouble right now. Try rephrasing your question!"
 
-    def get_voice_config(self, question: dict, question_type: str,
-                         skill_level: str, age_group: str) -> types.LiveConnectConfig:
-        """Return a LiveConnectConfig with the Socratic system prompt baked in."""
-        prompt_template = self._load_help_prompt()
-        question_context = self._build_question_context(question, question_type)
 
-        system_prompt = prompt_template.format(
-            skill_level=skill_level,
-            age_group=age_group,
-            question_context=question_context
-        )
-
-        return types.LiveConnectConfig(
-            response_modalities=["AUDIO"],
-            system_instruction=types.Content(
-                parts=[types.Part.from_text(text=system_prompt)]
-            ),
-        )
