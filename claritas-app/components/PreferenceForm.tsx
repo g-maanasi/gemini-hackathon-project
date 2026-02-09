@@ -1,19 +1,19 @@
 'use client'
 import React, { useContext, useEffect, useState } from 'react';
-import { 
-  UserRole, 
-  EducationLevel, 
-  PreferenceProfile, 
-  UserInformation,
-  UserPreferences
+import {
+    UserRole,
+    EducationLevel,
+    PreferenceProfile,
+    UserInformation,
+    UserPreferences
 } from '../types';
 import {
-  US_STATES,
-  K12_GRADES,
-  COLLEGE_YEARS,
-  COMMON_SUBJECTS,
-  LEARNING_STYLES,
-  STUDENT_TRAITS
+    US_STATES,
+    K12_GRADES,
+    COLLEGE_YEARS,
+    COMMON_SUBJECTS,
+    LEARNING_STYLES,
+    STUDENT_TRAITS
 } from '../constants';
 import { ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ import { SessionContext } from "@/context/SessionContext";
 import { createUser } from '@/services/apiService';
 
 interface Props {
-    onComplete: (data: any) => void; 
+    onComplete: (data: any) => void;
     onProcessingChange: (status: boolean) => void;
 }
 
@@ -74,7 +74,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
         e.preventDefault();
         setLoading(true);
         onProcessingChange(true);
-    
+
         try {
             if (session) {
                 const userInformation: UserInformation = {
@@ -82,7 +82,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     email: session.email!,
                     password: session.password!,
                 };
-    
+
                 const userPrefs: UserPreferences = {
                     role: profile.role,
                     educationLevel: profile.educationLevel,
@@ -91,14 +91,14 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     traits: profile.traits.join(','), // or keep as array if your backend expects array
                     learningStyle: profile.learningStyle,
                 };
-    
+
                 const result = await createUser(userInformation, userPrefs);
-    
+
                 // ✅ result is the JSON returned by your API
                 if (result.error) {
                     throw new Error(result.error);
                 }
-    
+
                 router.push('/dashboard');
             } else {
                 router.push('/sign-in');
@@ -111,7 +111,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
             onProcessingChange(false);
         }
     };
-    
+
 
     return (
         <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-100 border border-white/60 max-w-4xl width-100 mx-auto overflow-y-hidden">
@@ -128,7 +128,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     ))}
                 </div>
                 <div className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                    Profile: {Math.round((step / (totalSteps -  1)) * 100)}% Complete
+                    Profile: {Math.round((step / (totalSteps - 1)) * 100)}% Complete
                 </div>
             </div>
 
@@ -138,7 +138,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     {step === 1 && (
                         <div className="space-y-10 animate-fade-in">
                             <div className="space-y-2">
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Identify Your <br/><span className="text-indigo-600 underline decoration-indigo-200 underline-offset-8">Perspective</span></h2>
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Identify Your <br /><span className="text-indigo-600 underline decoration-indigo-200 underline-offset-8">Perspective</span></h2>
                                 <p className="text-slate-500 text-lg font-medium">Select your role to unlock localized curricula.</p>
                             </div>
 
@@ -160,9 +160,9 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                                             <div>
                                                 <div className="font-black text-xl text-slate-800">I am a {role}</div>
                                                 <p className="text-sm text-slate-500 mt-2 font-medium leading-relaxed">
-                                                    {role === UserRole.STUDENT 
-                                                      ? 'I want to build a personal learning roadmap for my own goals.' 
-                                                      : 'I am managing standards and progress for my child.'}
+                                                    {role === UserRole.STUDENT
+                                                        ? 'I want to build a personal learning roadmap for my own goals.'
+                                                        : 'I am managing standards and progress for my child.'}
                                                 </p>
                                             </div>
                                         </div>
@@ -195,7 +195,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     {step === 2 && (
                         <div className="space-y-10 animate-fade-in">
                             <div className="space-y-2">
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Academic <br/><span className="text-indigo-600">Calibration</span></h2>
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Academic <br /><span className="text-indigo-600">Calibration</span></h2>
                                 <p className="text-slate-500 text-lg font-medium">Where are you in your learning journey?</p>
                             </div>
 
@@ -245,7 +245,7 @@ const PreferenceForm: React.FC<Props> = ({ onComplete, onProcessingChange }) => 
                     {step === 3 && (
                         <div className="space-y-10 animate-fade-in">
                             <div className="space-y-2">
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Personal <br/><span className="text-indigo-600">Cognition</span></h2>
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Personal <br /><span className="text-indigo-600">Cognition</span></h2>
                                 <p className="text-slate-500 text-lg font-medium">How do you process new information?</p>
                             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -21,6 +21,7 @@ const Header = () => (
         <div className="w-8 h-8 rounded-full bg-gray-200" />
     </header>
 );
+import { updateCourseProgress } from '@/services/apiService';
 
 interface QuizQuestion {
     question: string;
@@ -120,12 +121,31 @@ function TopicPageContent() {
     // Quiz state
     const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
     const [showResults, setShowResults] = useState<{ [key: number]: boolean }>({});
+    const progressSynced = useRef(false);
+
+    // Mark topic as completed in localStorage and sync to Supabase when content loads
+    useEffect(() => {
+        if (!content || !courseId || !unitNumber || !subtopicIndex || progressSynced.current) return;
+        progressSynced.current = true;
+
+        const topicKey = `${unitNumber}-${subtopicIndex}`;
+        const stored = localStorage.getItem(`course-progress-${courseId}`);
+        if (stored) {
+            const progress = JSON.parse(stored);
+            if (!progress.completedTopics.includes(topicKey)) {
+                progress.completedTopics.push(topicKey);
+            }
+            progress.lastVisited = topicKey;
+            localStorage.setItem(`course-progress-${courseId}`, JSON.stringify(progress));
+            updateCourseProgress(courseId, progress.completedTopics, progress.lastVisited).catch(() => {});
+        }
+    }, [content, courseId, unitNumber, subtopicIndex]);
 
     const backUrl = courseId && unitNumber
-        ? `/course/module?courseId=${courseId}&unit=${unitNumber}`
+        ? `/dashboard/course/module?courseId=${courseId}&unit=${unitNumber}`
         : courseId
-            ? `/course/${courseId}`
-            : '/generate';
+            ? `/dashboard/course/${courseId}`
+            : '/dashboard';
 
     useEffect(() => {
         if (!courseId || !unitNumber || !subtopicIndex) return;
@@ -172,8 +192,7 @@ function TopicPageContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#fafafa]">
-                <Header />
+            <div className="min-h-screen bg-[#fafafa] pt-24">
                 <div className="max-w-4xl mx-auto py-12 px-6 text-center">
                     <div className="animate-pulse flex flex-col items-center">
                         <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -193,8 +212,7 @@ function TopicPageContent() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-[#fafafa]">
-                <Header />
+            <div className="min-h-screen bg-[#fafafa] pt-24">
                 <div className="max-w-4xl mx-auto py-12 px-6 text-center">
                     <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-100">
                         <h3 className="font-bold text-lg mb-2">Something went wrong</h3>
@@ -212,8 +230,7 @@ function TopicPageContent() {
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa]">
-            <Header />
+        <div className="min-h-screen bg-[#fafafa] pt-24">
             <div className="max-w-3xl mx-auto py-12 px-6">
                 <Link
                     href={backUrl}
@@ -344,8 +361,7 @@ function TopicPageContent() {
 export default function TopicPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-[#fafafa]">
-                <Header />
+            <div className="min-h-screen bg-[#fafafa] pt-24">
                 <div className="flex items-center justify-center h-[60vh]">
                     <div className="flex flex-col items-center gap-4">
                         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />

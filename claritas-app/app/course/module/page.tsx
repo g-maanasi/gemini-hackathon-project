@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { updateCourseProgress } from '@/services/apiService';
 
 // --- Types ---
 interface Quiz {
